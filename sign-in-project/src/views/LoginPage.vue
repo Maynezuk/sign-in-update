@@ -100,7 +100,7 @@ export default defineComponent({
             </div>
             <router-link to="/registration">Нет аккаунта?</router-link>
         </div>
-        <my-button type="submit" class="btn">Войти</my-button>
+        <my-button type="submit" class="btn">Вход</my-button>
     </my-form>
 </template>
 
