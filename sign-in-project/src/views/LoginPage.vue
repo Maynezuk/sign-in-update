@@ -1,74 +1,66 @@
-<script lang="ts">
-import { defineComponent } from 'vue';
+<script setup lang="ts">
+import { ref, computed } from 'vue';
+import { useRouter } from 'vue-router';
 import axios, { AxiosError } from 'axios';
 import MyButton from '@/components/MyButton.vue';
 import MyForm from '@/components/MyForm.vue';
 import MyInput from '@/components/MyInput.vue';
 
-
 interface UserLogin {
-    login: string;
-    password: string;
+  login: string;
+  password: string;
 }
 
-export default defineComponent({
-    name: 'LoginPage',
-    components: {
-        MyButton, MyForm, MyInput
-    },
-    data() {
-        return {
-            user: {
-                login: '',
-                password: ''
-            } as UserLogin,
-            showPassword: false
-        };
-    },
-    methods: {
-        togglePasswordVisibility() {
-            this.showPassword = !this.showPassword;
-        },
-        async loginUser() {
-            try {
-                const response = await axios.post(
-                    'http://127.0.0.1:8000/users/login',
-                    {
-                        login: this.user.login,
-                        password: this.user.password
-                    }
-                );
+const router = useRouter();
 
-                localStorage.setItem('isAuthenticated', 'true');
-                localStorage.setItem('userId', response.data.user_id.toString());
-
-                await this.$router.push('/');
-            } catch (error) {
-                const axiosError = error as AxiosError;
-
-                if (axiosError.response) {
-                    switch (axiosError.response.status) {
-                        case 404:
-                            alert('Пользователь не найден!');
-                            break;
-                        case 401:
-                            alert('Неверный пароль!');
-                            break;
-                        default:
-                            alert('Ошибка сервера');
-                    }
-                } else {
-                    alert('Ошибка сети');
-                }
-            }
-        }
-    },
-    computed: {
-        passwordFieldType(): string {
-            return this.showPassword ? 'text' : 'password';
-        }
-    }
+const user = ref<UserLogin>({
+  login: '',
+  password: ''
 });
+
+const showPassword = ref(false);
+
+const togglePasswordVisibility = () => {
+  showPassword.value = !showPassword.value;
+};
+
+const passwordFieldType = computed(() => {
+  return showPassword.value ? 'text' : 'password';
+});
+
+const loginUser = async () => {
+  try {
+    const response = await axios.post(
+      'http://127.0.0.1:8000/users/login',
+      {
+        login: user.value.login,
+        password: user.value.password
+      }
+    );
+
+    localStorage.setItem('isAuthenticated', 'true');
+    localStorage.setItem('userId', response.data.user_id.toString());
+
+    await router.push('/');
+  } catch (error) {
+    const axiosError = error as AxiosError;
+
+    if (axiosError.response) {
+      switch (axiosError.response.status) {
+        case 404:
+          alert('Пользователь не найден!');
+          break;
+        case 401:
+          alert('Неверный пароль!');
+          break;
+        default:
+          alert('Ошибка сервера');
+      }
+    } else {
+      alert('Ошибка сети');
+    }
+  }
+};
 </script>
 
 <template>

@@ -1,9 +1,11 @@
-<script lang="ts">
-import { defineComponent } from 'vue';
-import axios from 'axios';
+<script setup lang="ts">
+import axios, { AxiosError } from 'axios';
+import { ref, computed } from 'vue';
+import { useRouter } from 'vue-router';
 import MyButton from '@/components/MyButton.vue';
 import MyForm from '@/components/MyForm.vue';
 import MyInput from '@/components/MyInput.vue';
+
 
 interface UserRegister {
     name: string;
@@ -14,69 +16,65 @@ interface UserRegister {
     repass: string;
 }
 
-export default defineComponent({
-    name: 'RegistrationPage',
-    components: {
-        MyButton, MyForm, MyInput
-    },
-    data() {
-        return {
-            user: {
-                name: '',
-                surname: '',
-                middlename: '',
-                login: '',
-                password: '',
-                repass: ''
-            } as UserRegister,
-            showPassword: false,
-            showRepass: false
-        };
-    },
-    methods: {
-        togglePasswordVisibility() {
-            this.showPassword = !this.showPassword;
-        },
-        toggleRepassVisibility() {
-            this.showRepass = !this.showRepass;
-        },
-        async registerUser() {
-            if (this.user.password !== this.user.repass) {
-                alert('Пароль не совпадает');
-                return;
-            }
+const router =useRouter()
 
-            try {
-                const response = await axios.post('http://127.0.0.1:8000/users/', {
-                    name: this.user.name,
-                    surname: this.user.surname,
-                    middlename: this.user.middlename,
-                    login: this.user.login,
-                    password: this.user.password
-                });
+const user = ref<UserRegister>({
+    name: '',
+    surname: '',
+    middlename: '',
+    login: '',
+    password: '',
+    repass: ''
+})
 
-                if (response.status === 200) {
-                    await this.$router.push('/login');
-                }
-            } catch (error) {
-                if (axios.isAxiosError(error)) {
-                    alert(error.response?.data?.message || 'Ошибка регистрации');
-                } else {
-                    console.error('Неизвестная ошибка:', error);
-                    alert('Неизвестная ошибка при регистрации');
-                }
-            }
+const showPassword = ref(false);
+
+const showRepass = ref(false);
+
+const togglePasswordVisibility = () => {
+  showPassword.value = !showPassword.value;
+};
+
+const toggleRepassVisibility = () => {
+  showPassword.value = !showPassword.value;
+};
+
+const passwordFieldType = computed(() => {
+  return showPassword.value ? 'text' : 'password';
+});
+
+const repassFieldType = computed(() => {
+  return showPassword.value ? 'text' : 'password';
+});
+
+const registerUser = async () => {
+    if (user.value.password !== user.value.repass) {
+        alert('Пароль не совпадает');
+        return;
+    }
+
+    try {
+        const response = await axios.post('http://127.0.0.1:8000/users/', {
+            name: user.value.name,
+            surname: user.value.surname,
+            middlename: user.value.middlename,
+            login: user.value.login,
+            password: user.value.password
+        });
+
+        if (response.status === 200) {
+            await router.push('/login');
         }
-    },
-    computed: {
-        passwordFieldType(): string {
-            return this.showPassword ? 'text' : 'password';
-        },
-        repassFieldType(): string {
-            return this.showRepass ? 'text' : 'password';
+    } catch (error) {
+        if (axios.isAxiosError(error)) {
+            alert(error.response?.data?.message || 'Ошибка регистрации');
+        } else {
+            console.error('Неизвестная ошибка:', error);
+            alert('Неизвестная ошибка при регистрации');
         }
     }
-});
+}
+
 </script>
 
 <template>
