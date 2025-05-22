@@ -1,0 +1,135 @@
+<script lang="ts">
+import { defineComponent } from 'vue';
+import axios, { AxiosError } from 'axios';
+import MyButton from '@/components/MyButton.vue';
+import MyForm from '@/components/MyForm.vue';
+import MyInput from '@/components/MyInput.vue';
+
+
+interface UserLogin {
+    login: string;
+    password: string;
+}
+
+export default defineComponent({
+    name: 'LoginPage',
+    components: {
+        MyButton, MyForm, MyInput
+    },
+    data() {
+        return {
+            user: {
+                login: '',
+                password: ''
+            } as UserLogin,
+            showPassword: false
+        };
+    },
+    methods: {
+        togglePasswordVisibility() {
+            this.showPassword = !this.showPassword;
+        },
+        async loginUser() {
+            try {
+                const response = await axios.post(
+                    'http://127.0.0.1:8000/users/login',
+                    {
+                        login: this.user.login,
+                        password: this.user.password
+                    }
+                );
+
+                localStorage.setItem('isAuthenticated', 'true');
+                localStorage.setItem('userId', response.data.user_id.toString());
+
+                await this.$router.push('/');
+            } catch (error) {
+                const axiosError = error as AxiosError;
+
+                if (axiosError.response) {
+                    switch (axiosError.response.status) {
+                        case 404:
+                            alert('Пользователь не найден!');
+                            break;
+                        case 401:
+                            alert('Неверный пароль!');
+                            break;
+                        default:
+                            alert('Ошибка сервера');
+                    }
+                } else {
+                    alert('Ошибка сети');
+                }
+            }
+        }
+    },
+    computed: {
+        passwordFieldType(): string {
+            return this.showPassword ? 'text' : 'password';
+        }
+    }
+});
+</script>
+
+<template>
+    <my-form @submit.prevent="loginUser">
+        <h2>Вход в аккаунт</h2>
+        <my-input
+            v-model="user.login"
+            type="text"
+            placeholder="Введите логин"
+            @keydown.space.prevent
+            required
+        />
+        <my-input
+            v-model="user.password"
+            :type="passwordFieldType"
+            placeholder="Введите пароль"
+            @keydown.space.prevent
+            required
+        />
+        <div class="end-of-form">
+            <div>
+                <input
+                    class="pass-show"
+                    type="checkbox"
+                    :checked="showPassword"
+                    @change="togglePasswordVisibility"
+                >
+                <span>Показать пароль</span>
+            </div>
+            <router-link to="/registration">Нет аккаунта?</router-link>
+        </div>
+        <my-button type="submit" class="btn">Войти</my-button>
+    </my-form>
+</template>
+
+<style scoped>
+h2 {
+    align-self: center;
+}
+
+.end-of-form {
+    display: flex;
+    justify-content: space-between;
+}
+
+.pass-show {
+    margin: 5px;
+}
+
+span {
+    font-size: small;
+}
+
+a {
+    font-size: small;
+    margin-top: 5px;
+    text-decoration: none;
+    color: black;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+</style>
