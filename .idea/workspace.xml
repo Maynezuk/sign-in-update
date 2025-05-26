@@ -4,19 +4,19 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="b790572c-7f36-4501-96ca-89dbe3600b9d" name="Changes" comment="" />
+    <list default="true" id="b2e940b7-0f63-48fb-9d50-10f9087eb361" name="Changes" comment="" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
   <component name="Git.Settings">
-    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/.." />
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
   <component name="ProjectColorInfo">{
-  &quot;associatedIndex&quot;: 1
+  &quot;associatedIndex&quot;: 3
 }</component>
-  <component name="ProjectId" id="2xRIBOKrvg8f0HPgveH6a1gdEpG" />
+  <component name="ProjectId" id="2xcw0FMaDSMRvuffKOzCOmwVm1Q" />
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
@@ -26,6 +26,7 @@
     "ModuleVcsDetector.initialDetectionPerformed": "true",
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.git.unshallow": "true",
+    "SHELLCHECK.PATH": "/home/ivan/.local/share/JetBrains/PyCharmCE2025.1/Shell Script/shellcheck",
     "git-widget-placeholder": "main",
     "last_opened_file_path": "/home/ivan/Рабочий стол/sign-in-update/backend"
   }
@@ -39,22 +40,12 @@
   </component>
   <component name="TaskManager">
     <task active="true" id="Default" summary="Default task">
-      <changelist id="b790572c-7f36-4501-96ca-89dbe3600b9d" name="Changes" comment="" />
-      <created>1747894324510</created>
+      <changelist id="b2e940b7-0f63-48fb-9d50-10f9087eb361" name="Changes" comment="" />
+      <created>1748250444620</created>
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
-      <updated>1747894324510</updated>
+      <updated>1748250444620</updated>
     </task>
     <servers />
-  </component>
-  <component name="XDebuggerManager">
-    <breakpoint-manager>
-      <breakpoints>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/models.py</url>
-          <option name="timeStamp" value="2" />
-        </line-breakpoint>
-      </breakpoints>
-    </breakpoint-manager>
   </component>
 </project>
