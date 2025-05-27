@@ -30,13 +30,15 @@ const passwordFieldType = computed(() => {
 
 const loginUser = async () => {
   try {
-    await axios.post('/api/users/login', {
+    const response = await axios.post('/api/users/login', {
       login: user.value.login,
       password: user.value.password
     });
 
-    // localStorage.setItem('isAuthenticated', 'true');
-    // localStorage.setItem('userId', response.data.user_id.toString());
+    localStorage.setItem('isAuthenticated', 'true');
+    localStorage.setItem('userName', response.data.user_name);
+    localStorage.setItem('userSurname', response.data.user_surname);
+    localStorage.setItem('userId', response.data.user_id.toString());
 
     await router.push('/');
   } catch (error) {
@@ -73,7 +75,7 @@ const loginUser = async () => {
       </div>
       <router-link to="/registration">Нет аккаунта?</router-link>
     </div>
-    <my-button type="submit" class="btn">Вход</my-button>
+    <my-button type="submit" class="btn">Войти</my-button>
   </my-form>
 </template>
 

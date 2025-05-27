@@ -28,5 +28,6 @@ const updateInput = (event: Event) => {
     border: 1px solid rgb(225, 225, 225);
     border-radius: 15px;
     background: none;
+    font-size: 16px;
 }
 </style>

@@ -13,7 +13,8 @@ defineOptions({
 <style scoped>
 .btn {
     border: 1px solid whitesmoke;
-    background: linear-gradient(to right,red, rgb(255, 145, 145), rgb(255, 208, 208));
+    background: linear-gradient(to right,red, rgb(255, 90, 90));
+    color: white;
     height: 35px;
     padding: 0 10px;
     border-radius: 15px;
@@ -25,5 +26,6 @@ defineOptions({
 
 .btn:hover {
     border: 1px solid red;
+    background: linear-gradient(to right,rgb(255, 10, 10), rgb(255, 100, 100));
 }
 </style>

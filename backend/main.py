@@ -1,4 +1,4 @@
-from fastapi import FastAPI,HTTPException, Depends
+from fastapi import FastAPI,HTTPException, Depends, Response
 from typing import Optional
 from sqlalchemy.orm import Session
 from passlib.context import CryptContext
@@ -6,9 +6,19 @@ from fastapi.middleware.cors import CORSMiddleware
 from models import Base, User
 from database import engine, session_local
 from schemas import UserCreate, User as DbUser
+from authx import AuthX, AuthXConfig
 
 
 app = FastAPI()
+
+
+config = AuthXConfig()
+config.JWT_SECRET_KEY = "secret_key"
+config.JWT_ALGORITHM = "HS256"
+config.JWT_ACCESS_COOKIE_NAME = "my_access_token"
+config.JWT_TOKEN_LOCATION = ["cookies"]
+
+security = AuthX(config=config)
 
 
 origins = [
@@ -28,11 +38,6 @@ app.add_middleware(
 Base.metadata.create_all(bind=engine)
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
-# При создании пользователя
-
-
-# При проверке пароля
 
 
 def get_db():
@@ -57,7 +62,7 @@ async def create_user(user: UserCreate, db: Session = Depends(get_db)) -> User:
 
 
 @app.post("/api/users/login")
-async def login_user(user_data: dict, db: Session = Depends(get_db)):
+async def login_user(user_data: dict, db: Session = Depends(get_db), response: Response = None):
     login = user_data.get('login')
     password = user_data.get('password')
 
@@ -68,10 +73,21 @@ async def login_user(user_data: dict, db: Session = Depends(get_db)):
     if not pwd_context.verify(password, db_user.password):
         raise HTTPException(status_code=401, detail='Incorrect password')
 
-    return {"message": "Login successful", "user_id": db_user.id}
+    token = security.create_access_token(uid=str(db_user.id))
+
+    security.set_access_cookies(token, response)
+
+    return {
+        "message": "Login successful",
+        "user_id": db_user.id,
+        "user_name": db_user.name,
+        "user_surname": db_user.surname,
+        "access_token": token,
+        "token_type": "bearer"
+    }
 
 
 
-# @app.get("/protected")
-# def protected():
-#     ...
+@app.get("/protected", dependencies=[Depends(security.access_token_required)])
+def get_protected():
+    return {"message": "Hello World"}
