@@ -1,4 +1,4 @@
-from fastapi import FastAPI,HTTPException, Depends, Response
+from fastapi import FastAPI, HTTPException, Depends, Response, Request
 from typing import Optional
 from sqlalchemy.orm import Session
 from passlib.context import CryptContext
@@ -6,20 +6,16 @@ from fastapi.middleware.cors import CORSMiddleware
 from models import Base, User
 from database import engine, session_local
 from schemas import UserCreate, User as DbUser
-from authx import AuthX, AuthXConfig
+from jose import jwt
+from datetime import datetime, timedelta
 
 
 app = FastAPI()
 
-
-config = AuthXConfig()
-config.JWT_SECRET_KEY = "secret_key"
-config.JWT_ALGORITHM = "HS256"
-config.JWT_ACCESS_COOKIE_NAME = "my_access_token"
-config.JWT_TOKEN_LOCATION = ["cookies"]
-
-security = AuthX(config=config)
-
+# JWT конфигурация (пока бездарный сикретный ключ побудет здесь)
+SECRET_KEY = "your-secret-key-here"
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 origins = [
     "http://localhost:5173",
@@ -39,7 +35,6 @@ Base.metadata.create_all(bind=engine)
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-
 def get_db():
     db = session_local()
     try:
@@ -47,6 +42,25 @@ def get_db():
     finally:
         db.close()
 
+def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
+    to_encode = data.copy()
+    if expires_delta:
+        expire = datetime.utcnow() + expires_delta
+    else:
+        expire = datetime.utcnow() + timedelta(minutes=15)
+    to_encode.update({"exp": expire})
+    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return encoded_jwt
+
+async def get_current_user(request: Request):
+    token = request.cookies.get("access_token")
+    if token is None:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        return payload
+    except jwt.JWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
 
 @app.post("/api/users/", response_model=DbUser)
 async def create_user(user: UserCreate, db: Session = Depends(get_db)) -> User:
@@ -57,9 +71,7 @@ async def create_user(user: UserCreate, db: Session = Depends(get_db)) -> User:
     db.add(db_user)
     db.commit()
     db.refresh(db_user)
-
     return db_user
-
 
 @app.post("/api/users/login")
 async def login_user(user_data: dict, db: Session = Depends(get_db), response: Response = None):
@@ -73,21 +85,36 @@ async def login_user(user_data: dict, db: Session = Depends(get_db), response: R
     if not pwd_context.verify(password, db_user.password):
         raise HTTPException(status_code=401, detail='Incorrect password')
 
-    token = security.create_access_token(uid=str(db_user.id))
+    access_token = create_access_token(
+        data={
+            "sub": db_user.login,
+            "name": db_user.name,
+            "surname": db_user.surname,
+            "id": db_user.id
+        },
+        expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    )
 
-    security.set_access_cookies(token, response)
+    response.set_cookie(
+        key="access_token",
+        value=access_token,
+        httponly=True,
+        max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        samesite="lax",
+        secure=False  # Для разработки! Если нужно, могу вернуть обратно в True
+    )
 
-    return {
-        "message": "Login successful",
-        "user_id": db_user.id,
-        "user_name": db_user.name,
-        "user_surname": db_user.surname,
-        "access_token": token,
-        "token_type": "bearer"
-    }
+    return {"message": "Login successful",}
 
+@app.get("/api/users/me")
+async def read_current_user(current_user: dict = Depends(get_current_user)):
+    return current_user
 
+@app.post("/api/users/logout")
+async def logout_user(response: Response):
+    response.delete_cookie("access_token")
+    return {"message": "Logout successful"}
 
-@app.get("/protected", dependencies=[Depends(security.access_token_required)])
-def get_protected():
-    return {"message": "Hello World"}
+@app.get("/protected")
+async def protected_route(current_user: dict = Depends(get_current_user)):
+    return {"message": f"Hello {current_user['name']}", "user": current_user}
