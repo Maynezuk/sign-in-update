@@ -106,7 +106,7 @@ async def login_user(user_data: dict, db: Session = Depends(get_db), response: R
 
     return {"message": "Login successful",}
 
-@app.get("/api/users/me")
+@app.get("/api/users/data")
 async def read_current_user(current_user: dict = Depends(get_current_user)):
     return current_user
 

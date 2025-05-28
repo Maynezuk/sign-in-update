@@ -37,7 +37,7 @@ const loginUser = async () => {
       withCredentials: true
     });
 
-
+    localStorage.setItem('isAuth', 'true')
     await router.push('/');
   } catch (error) {
     const axiosError = error as AxiosError;

@@ -12,7 +12,7 @@
 <script setup lang="ts">
 import MyButton from '@/components/MyButton.vue';
 import { ref, onMounted } from 'vue';
-import axios, { AxiosError } from 'axios';
+import axios from 'axios';
 // import { useRouter } from 'vue-router';
 
 // const router = useRouter();
@@ -20,21 +20,13 @@ const fullName = ref('');
 
 const fetchUserData = async () => {
   try {
-    const response = await axios.get('/api/users/me', {
+    const response = await axios.get('/api/users/data', {
       withCredentials: true
     });
     fullName.value = `${response.data.name} ${response.data.surname}`;
   } catch (error) {
-    const axiosError = error as AxiosError;
-
-    if (axiosError.response) {
-      if (axiosError.response.status === 401) {
-        console.log('Токен отсутствует')
-      }
-    } else {
-      alert('Ошибка сети');
-      console.error('Неизвестная ошибка:', error);  
-    }
+    alert('Ошибка сети');
+    console.error('Неизвестная ошибка:', error);  
   }
 };
 
@@ -44,13 +36,18 @@ const logout = async () => {
       withCredentials: true
     });
     fullName.value = '';
+    localStorage.removeItem('isAuth')
   } catch (error) {
     console.error('Ошибка при выходе:', error);
   }
 };
 
 onMounted(() => {
-  fetchUserData();
+  const storedAuth = localStorage.getItem('isAuth')
+  if(storedAuth){
+    fetchUserData();
+  }
+
 });
 </script>
 
