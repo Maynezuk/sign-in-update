@@ -80,7 +80,7 @@ const registerUser = async () => {
 <template>
     <my-form @submit.prevent="registerUser">
         <h2>Регистрация</h2>
-        <my-input v-focus v-model="user.name" type="text" placeholder="Имя" @keydown.space.prevent required/>
+        <my-input v-model="user.name" type="text" placeholder="Имя" @keydown.space.prevent required/>
         <my-input v-model="user.surname" type="text" placeholder="Фамилия" @keydown.space.prevent required/>
         <my-input v-model="user.middlename" type="text" placeholder="Отчество (при наличии)" @keydown.space.prevent/>
         <hr>

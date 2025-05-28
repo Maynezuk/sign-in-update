@@ -30,15 +30,13 @@ const passwordFieldType = computed(() => {
 
 const loginUser = async () => {
   try {
-    const response = await axios.post('/api/users/login', {
+    await axios.post('/api/users/login', {
       login: user.value.login,
       password: user.value.password
+    }, {
+      withCredentials: true
     });
 
-    localStorage.setItem('isAuthenticated', 'true');
-    localStorage.setItem('userName', response.data.user_name);
-    localStorage.setItem('userSurname', response.data.user_surname);
-    localStorage.setItem('userId', response.data.user_id.toString());
 
     await router.push('/');
   } catch (error) {
@@ -57,6 +55,7 @@ const loginUser = async () => {
       }
     } else {
       alert('Ошибка сети');
+      console.error('Неизвестная ошибка:', error);  
     }
   }
 };
