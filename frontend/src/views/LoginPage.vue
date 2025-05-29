@@ -38,8 +38,9 @@ const loginUser = async () => {
     }, {
       withCredentials: true
     });
-    // Сохранение переменной для существования токена
-    localStorage.setItem('isAuth', 'true')
+    
+    localStorage.setItem('isAuth', 'true') // Сохранение переменной для существования токена
+    
     // Таймер существования переменной
     const response = await axios.get('/api/users/data', {
       withCredentials: true
@@ -47,8 +48,9 @@ const loginUser = async () => {
     const delToken = () => {localStorage.removeItem('isAuth')}
     const time = response.data.timer_sec * 1000
     setTimeout(delToken, time)
-    // Переход на страницу
+
     await router.push('/');
+    
     // Обработка ошибок
   } catch (error) {
     const axiosError = error as AxiosError;

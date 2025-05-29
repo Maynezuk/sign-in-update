@@ -12,10 +12,10 @@ from datetime import datetime, timedelta
 
 app = FastAPI()
 
-# JWT конфигурация (пока бездарный сикретный ключ побудет здесь)
+# JWT конфигурация (пока бездарный секретный ключ побудет здесь)
 SECRET_KEY = "your-secret-key-here"
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 1
+ACCESS_TOKEN_EXPIRE_MINUTES = 1 # Таймер существоания токена (для проверки ставлю на 1 минуту)
 
 origins = [
     "http://localhost:5173",

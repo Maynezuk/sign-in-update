@@ -41,7 +41,7 @@ const logout = async () => {
       withCredentials: true
     });
     
-    fullName.value = ''; // Очистка переменной для показа Фамилии и Имени
+    fullName.value = ''; // Очистка переменной для показа Фамилии и Имени в приветствии
     
     localStorage.removeItem('isAuth') // Удаление переменной для активации функции получения данных токена
 
