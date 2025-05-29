@@ -26,7 +26,7 @@ const user = ref<UserRegister>({
     password: '',
     repass: ''
 })
-
+// Показ пароля
 const showPassword = ref(false);
 
 const showRepass = ref(false);
@@ -47,24 +47,27 @@ const repassFieldType = computed(() => {
   return showRepass.value ? 'text' : 'password';
 });
 
+// Регистрация
 const registerUser = async () => {
-    if (user.value.password !== user.value.repass) {
+    if (user.value.password !== user.value.repass) { // Проверка на соответствие паролей
         alert('Пароль не совпадает');
         return;
     }
-
+    
     try {
-        const response = await axios.post('/api/users/', {
+        const response = await axios.post('/api/users/', { // Создание пользователя
             name: user.value.name,
             surname: user.value.surname,
             middlename: user.value.middlename,
             login: user.value.login,
             password: user.value.password
         });
-
-        if (response.status === 200) {
+        
+        if (response.status === 200) { // Переход на страницу входа, если збс
             await router.push('/login');
         }
+
+    // Обработка ошибок
     } catch (error) {
         if (axios.isAxiosError(error)) {
             alert(error.response?.data?.message || 'Ошибка регистрации');

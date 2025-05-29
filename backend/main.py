@@ -15,7 +15,7 @@ app = FastAPI()
 # JWT конфигурация (пока бездарный сикретный ключ побудет здесь)
 SECRET_KEY = "your-secret-key-here"
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
+ACCESS_TOKEN_EXPIRE_MINUTES = 1
 
 origins = [
     "http://localhost:5173",
@@ -90,7 +90,8 @@ async def login_user(user_data: dict, db: Session = Depends(get_db), response: R
             "sub": db_user.login,
             "name": db_user.name,
             "surname": db_user.surname,
-            "id": db_user.id
+            "id": db_user.id,
+            "timer_sec": ACCESS_TOKEN_EXPIRE_MINUTES * 60
         },
         expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     )

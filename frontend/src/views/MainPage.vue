@@ -18,30 +18,40 @@ import axios from 'axios';
 // const router = useRouter();
 const fullName = ref('');
 
+// Получение данных токена
 const fetchUserData = async () => {
   try {
     const response = await axios.get('/api/users/data', {
       withCredentials: true
     });
-    fullName.value = `${response.data.name} ${response.data.surname}`;
+    
+    fullName.value = `${response.data.surname} ${response.data.name}`; // Запись данных Фамилии и Имени для показа в приветствии
+
+    // Обработка ошибок
   } catch (error) {
     alert('Ошибка сети');
     console.error('Неизвестная ошибка:', error);  
   }
 };
 
+// Выход из системы
 const logout = async () => {
   try {
-    await axios.post('/api/users/logout', {}, {
+    await axios.post('/api/users/logout', {}, { // Удаление токена
       withCredentials: true
     });
-    fullName.value = '';
-    localStorage.removeItem('isAuth')
+    
+    fullName.value = ''; // Очистка переменной для показа Фамилии и Имени
+    
+    localStorage.removeItem('isAuth') // Удаление переменной для активации функции получения данных токена
+
+    // Обработка ошибок
   } catch (error) {
     console.error('Ошибка при выходе:', error);
   }
 };
 
+// Проверка на использование функции и её активация
 onMounted(() => {
   const storedAuth = localStorage.getItem('isAuth')
   if(storedAuth){

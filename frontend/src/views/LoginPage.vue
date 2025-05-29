@@ -18,6 +18,7 @@ const user = ref<UserLogin>({
   password: ''
 });
 
+// Показ пароля
 const showPassword = ref(false);
 
 const togglePasswordVisibility = () => {
@@ -28,6 +29,7 @@ const passwordFieldType = computed(() => {
   return showPassword.value ? 'text' : 'password';
 });
 
+// Авторизация
 const loginUser = async () => {
   try {
     await axios.post('/api/users/login', {
@@ -36,12 +38,20 @@ const loginUser = async () => {
     }, {
       withCredentials: true
     });
-
+    // Сохранение переменной для существования токена
     localStorage.setItem('isAuth', 'true')
+    // Таймер существования переменной
+    const response = await axios.get('/api/users/data', {
+      withCredentials: true
+    });
+    const delToken = () => {localStorage.removeItem('isAuth')}
+    const time = response.data.timer_sec * 1000
+    setTimeout(delToken, time)
+    // Переход на страницу
     await router.push('/');
+    // Обработка ошибок
   } catch (error) {
     const axiosError = error as AxiosError;
-
     if (axiosError.response) {
       switch (axiosError.response.status) {
         case 404:
