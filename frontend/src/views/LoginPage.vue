@@ -5,6 +5,7 @@ import axios, { AxiosError } from 'axios';
 import MyButton from '@/components/MyButton.vue';
 import MyForm from '@/components/MyForm.vue';
 import MyInput from '@/components/MyInput.vue';
+import { useAuthStatus } from '@/store/authStatus';
 
 interface UserLogin {
   login: string;
@@ -17,6 +18,8 @@ const user = ref<UserLogin>({
   login: '',
   password: ''
 });
+
+const authStatus = useAuthStatus()
 
 // Показ пароля
 const showPassword = ref(false);
@@ -38,19 +41,13 @@ const loginUser = async () => {
     }, {
       withCredentials: true
     });
-    
-    localStorage.setItem('isAuth', 'true') // Сохранение переменной для существования токена
-    
-    // Таймер существования переменной
-    const response = await axios.get('/api/users/data', {
-      withCredentials: true
-    });
-    const delToken = () => {localStorage.removeItem('isAuth')}
-    const time = response.data.timer_sec * 1000
-    setTimeout(delToken, time)
+
+    // Сохранение переменной для существования токена в store
+    authStatus.isAuth = true;
+    authStatus.timer_sec()
 
     await router.push('/');
-    
+
     // Обработка ошибок
   } catch (error) {
     const axiosError = error as AxiosError;
@@ -67,7 +64,7 @@ const loginUser = async () => {
       }
     } else {
       alert('Ошибка сети');
-      console.error('Неизвестная ошибка:', error);  
+      console.error('Неизвестная ошибка:', error);
     }
   }
 };
