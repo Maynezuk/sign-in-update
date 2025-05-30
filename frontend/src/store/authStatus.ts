@@ -31,7 +31,7 @@ export const useAuthStatus = defineStore('authStatus', () => {
         withCredentials: true
       });
 
-      const time = response.data.timer_sec * 100;
+      const time = response.data.timer_sec * 1000;
 
       fetchUserData(true)
 

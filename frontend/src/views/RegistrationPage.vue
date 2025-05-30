@@ -26,6 +26,7 @@ const user = ref<UserRegister>({
     password: '',
     repass: ''
 })
+
 // Показ пароля
 const showPassword = ref(false);
 
