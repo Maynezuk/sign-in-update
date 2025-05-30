@@ -41,10 +41,8 @@ const loginUser = async () => {
     }, {
       withCredentials: true
     });
-
-    // Сохранение переменной для существования токена в store
-    authStatus.isAuth = true;
-    authStatus.timer_sec()
+    
+    authStatus.timer()
 
     await router.push('/');
 

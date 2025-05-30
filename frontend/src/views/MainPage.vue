@@ -11,31 +11,13 @@
 
 <script setup lang="ts">
 import MyButton from '@/components/MyButton.vue';
-import { ref, onMounted } from 'vue';
 import axios from 'axios';
 import { useAuthStatus } from '@/store/authStatus';
 // import { useRouter } from 'vue-router';
 
 // const router = useRouter();
-const fullName = ref('');
 
 const authStatus = useAuthStatus()
-
-// Получение данных токена
-const fetchUserData = async () => {
-  try {
-    const response = await axios.get('/api/users/data', {
-      withCredentials: true
-    });
-
-    authStatus.fullName = `${response.data.surname} ${response.data.name}`; // Запись данных Фамилии и Имени для показа в приветствии
-
-    // Обработка ошибок
-  } catch (error) {
-    alert('Ошибка сети');
-    console.error('Неизвестная ошибка:', error);
-  }
-};
 
 // Выход из системы
 const logout = async () => {
@@ -44,23 +26,13 @@ const logout = async () => {
       withCredentials: true
     });
 
-    authStatus.isAuth = false // Удаление переменной для активации функции получения данных токена
-    authStatus.fullName = "Гость"
+    authStatus.fetchUserData(false);
+
     // Обработка ошибок
   } catch (error) {
     console.error('Ошибка при выходе:', error);
   }
 };
-
-// Проверка на использование функции и её активация
-onMounted(() => {
-  if (authStatus.isAuth === true) {
-    fetchUserData();
-  } else {
-    authStatus.fullName = "Гость"
-  }
-
-});
 </script>
 
 <style scoped>
