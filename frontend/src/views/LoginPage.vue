@@ -40,9 +40,7 @@ const loginUser = async () => {
       password: user.value.password
     });
 
-    // Сохраняем токен в localStorage
-    // localStorage.setItem('token', response.data.access_token);
-    
+    clearTimeout(authStatus.timerID)
     authStatus.fetchUserNameData(true,  response.data.access_token);
 
     await router.push('/');

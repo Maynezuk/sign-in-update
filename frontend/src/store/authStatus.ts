@@ -5,6 +5,8 @@ import { ref } from 'vue';
 export const useAuthStatus = defineStore('authStatus', () => {
   const fullName = ref('Гость')
 
+  const timerID = ref(0)
+
   async function fetchUserNameData(isAuth: boolean, token?: string) {
     try {
       if (isAuth === true) {
@@ -18,11 +20,11 @@ export const useAuthStatus = defineStore('authStatus', () => {
             'Authorization': `Bearer ${token}`
           }
         });
-        
+
         const time = response.data.timer_sec * 1000;
         fullName.value = `${response.data.surname} ${response.data.name}`;
 
-        setTimeout(() => {
+        timerID.value = setTimeout(() => {
           fullName.value = 'Гость';
         }, time);
       } else {
@@ -35,5 +37,5 @@ export const useAuthStatus = defineStore('authStatus', () => {
     }
   };
 
-  return { fetchUserNameData, fullName }
+  return { fetchUserNameData, fullName, timerID }
 })

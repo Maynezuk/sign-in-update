@@ -1,22 +1,16 @@
 <script setup lang="ts">
 import MyButton from '@/components/MyButton.vue';
-import axios from 'axios';
 import { useAuthStatus } from '@/store/authStatus';
-// import { useRouter } from 'vue-router';
-
-// const router = useRouter();
 
 const authStatus = useAuthStatus()
 
 // Выход из системы
 const logout = async () => {
   try {
-    // Удаляем токен из localStorage вместо вызова API
-    // localStorage.removeItem('token');
+    // Удалние токена
+    clearTimeout(authStatus.timerID)  // Вроде бы и бесполезно, а вроде бы и не плохо
     authStatus.fetchUserNameData(false);
   
-    // await axios.post('/api/users/logout');
-    
   } catch (error) {
     console.error('Ошибка при выходе:', error);
   }
