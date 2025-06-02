@@ -42,7 +42,7 @@ const loginUser = async () => {
       withCredentials: true
     });
 
-    authStatus.timer() // Отображение изменений в приветствии и запуск таймера на время существования токена
+    authStatus.fetchUserDataOnTime() // Отображение изменений в приветствии и запуск таймера на время существования токена
 
     await router.push('/');
 

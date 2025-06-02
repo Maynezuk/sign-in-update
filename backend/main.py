@@ -116,6 +116,6 @@ async def logout_user(response: Response):
     response.delete_cookie("access_token")
     return {"message": "Logout successful"}
 
-@app.get("/protected")
-async def protected_route(current_user: dict = Depends(get_current_user)):
-    return {"message": f"Hello {current_user['name']}", "user": current_user}
+# @app.get("/protected")
+# async def protected_route(current_user: dict = Depends(get_current_user)):
+#     return {"message": f"Hello {current_user['name']}", "user": current_user}

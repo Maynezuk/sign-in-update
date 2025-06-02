@@ -25,23 +25,26 @@ export const useAuthStatus = defineStore('authStatus', () => {
     }
   };
 
-  async function timer() {
+  // Таймер, настроенный на время существования токена
+  async function fetchUserDataOnTime() {
     try {
       const response = await axios.get('/api/users/data', {
         withCredentials: true
       });
 
-      const time = response.data.timer_sec * 1000;
+      const time = response.data.timer_sec * 1000; // Перевод времени с секунд на милисекунды для таймера 
 
-      fetchUserData(true)
+      fetchUserData(true)  // Обновление данных в приветствии
 
-      setTimeout(() => {
+      setTimeout(() => {  // Запуск таймера
         fetchUserData(false)
       }, time)
+
+      // Обработка ошибок
     } catch (error) {
       console.error('Error in timer_sec:', error);
     }
   }
 
-  return { fetchUserData, timer, fullName }
+  return { fetchUserData, fetchUserDataOnTime, fullName }
 })
