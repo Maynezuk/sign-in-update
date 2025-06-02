@@ -9,7 +9,7 @@ const logout = async () => {
   try {
     // Удалние токена
     clearTimeout(authStatus.timerID)  // Вроде бы и бесполезно, а вроде бы и не плохо
-    authStatus.fetchUserNameData(false);
+    authStatus.fetchToken();
   
   } catch (error) {
     console.error('Ошибка при выходе:', error);
@@ -20,7 +20,7 @@ const logout = async () => {
 <template>
   <div>
     <div class="greeting">
-      <h1>Добро пожаловать на сайт, {{ authStatus.fullName }}!</h1>
+      <h1>Добро пожаловать на сайт{{ authStatus.fullName }}!</h1>
     </div>
     <div class="btn-container">
       <my-button @click="logout">Выход</my-button>

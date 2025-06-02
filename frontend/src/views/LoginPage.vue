@@ -41,7 +41,7 @@ const loginUser = async () => {
     });
 
     clearTimeout(authStatus.timerID)
-    authStatus.fetchUserNameData(true,  response.data.access_token);
+    authStatus.fetchToken(response.data.access_token);
 
     await router.push('/');
 

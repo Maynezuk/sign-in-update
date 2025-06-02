@@ -107,11 +107,6 @@ async def login_user(user_data: dict, db: Session = Depends(get_db)):
     }
 
 
-
 @app.get("/api/users/data")
 async def read_current_user(current_user: dict = Depends(get_current_user)):
     return current_user
-
-# @app.post("/api/users/logout")
-# async def logout_user():
-#     return {"message": "Logout successful - please remove the token client-side"}
