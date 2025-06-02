@@ -26,7 +26,7 @@ const logout = async () => {
       withCredentials: true
     });
 
-    authStatus.fetchUserData(false); // Отображение изменений в приветствии
+    authStatus.fetchUserNameData(false); // Отображение изменений в приветствии
 
     // Обработка ошибок
   } catch (error) {
