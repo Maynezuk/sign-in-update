@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import MyButton from '@/components/MyButton.vue';
+import axios from 'axios';
 import { useAuthStatus } from '@/store/authStatus';
 
 const authStatus = useAuthStatus()
@@ -8,13 +9,15 @@ const authStatus = useAuthStatus()
 const logout = async () => {
   try {
     // Удалние токена
-    clearTimeout(authStatus.timerID)  // Вроде бы и бесполезно, а вроде бы и не плохо
-    authStatus.fetchToken();
+
+    clearTimeout(authStatus.timerID);  // Вроде бы и бесполезно, а вроде бы и не плохо
+    authStatus.fullName = '';
+    // delete axios.defaults.headers.common['Authorization'];
   
   } catch (error) {
     console.error('Ошибка при выходе:', error);
   }
-};
+}; 
 </script>
 
 <template>
