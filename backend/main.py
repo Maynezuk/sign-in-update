@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Depends, Response, Request
+from fastapi import FastAPI, HTTPException, Depends, Header
 from typing import Optional
 from sqlalchemy.orm import Session
 from passlib.context import CryptContext
@@ -26,7 +26,7 @@ origins = [
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
-    allow_credentials=True,
+    # allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -52,13 +52,17 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
-async def get_current_user(request: Request):
-    token = request.cookies.get("access_token")
-    if token is None:
+async def get_current_user(authorization: str = Header(...)):
+    if not authorization.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="Not authenticated")
+
+    token = authorization[7:]  # Убираем 'Bearer '
+
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         return payload
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Token expired")
     except jwt.JWTError:
         raise HTTPException(status_code=401, detail="Invalid token")
 
@@ -74,7 +78,7 @@ async def create_user(user: UserCreate, db: Session = Depends(get_db)) -> User:
     return db_user
 
 @app.post("/api/users/login")
-async def login_user(user_data: dict, db: Session = Depends(get_db), response: Response = None):
+async def login_user(user_data: dict, db: Session = Depends(get_db)):
     login = user_data.get('login')
     password = user_data.get('password')
 
@@ -96,26 +100,18 @@ async def login_user(user_data: dict, db: Session = Depends(get_db), response: R
         expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     )
 
-    response.set_cookie(
-        key="access_token",
-        value=access_token,
-        httponly=True,
-        max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
-        samesite="lax",
-        secure=False  # Для разработки! Если нужно, могу вернуть обратно в True
-    )
+    return {
+        "message": "Login successful",
+        "access_token": access_token,
+        "token_type": "bearer"
+    }
 
-    return {"message": "Login successful",}
+
 
 @app.get("/api/users/data")
 async def read_current_user(current_user: dict = Depends(get_current_user)):
     return current_user
 
-@app.post("/api/users/logout")
-async def logout_user(response: Response):
-    response.delete_cookie("access_token")
-    return {"message": "Logout successful"}
-
-# @app.get("/protected")
-# async def protected_route(current_user: dict = Depends(get_current_user)):
-#     return {"message": f"Hello {current_user['name']}", "user": current_user}
+# @app.post("/api/users/logout")
+# async def logout_user():
+#     return {"message": "Logout successful - please remove the token client-side"}

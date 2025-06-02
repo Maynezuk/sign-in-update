@@ -11,13 +11,12 @@ const authStatus = useAuthStatus()
 // Выход из системы
 const logout = async () => {
   try {
-    await axios.post('/api/users/logout', {}, { // Удаление токена
-      withCredentials: true
-    });
-
-    authStatus.fetchUserNameData(false); // Отображение изменений в приветствии
-
-    // Обработка ошибок
+    // Удаляем токен из localStorage вместо вызова API
+    // localStorage.removeItem('token');
+    authStatus.fetchUserNameData(false);
+  
+    // await axios.post('/api/users/logout');
+    
   } catch (error) {
     console.error('Ошибка при выходе:', error);
   }

@@ -3,27 +3,40 @@ import axios from 'axios';
 import { ref } from 'vue';
 
 export const useAuthStatus = defineStore('authStatus', () => {
-
   const fullName = ref('Гость')
 
-  async function fetchUserNameData(isAuth: boolean) {
+  const authToken = ref('')
+
+  async function fetchUserNameData(isAuth: boolean, token?: string) {
     try {
       if (isAuth === true) {
+        if (!token) {
+          fullName.value = 'Гость';
+          return;
+        }
+
+        authToken.value = token
+
         const response = await axios.get('/api/users/data', {
-          withCredentials: true
+          headers: {
+            'Authorization': `Bearer ${authToken.value}`
+          }
         });
-        const time = response.data.timer_sec * 1000; // Перевод времени с секунд на милисекунды для таймера 
+        
+        const time = response.data.timer_sec * 1000;
+        fullName.value = `${response.data.surname} ${response.data.name}`;
 
-        fullName.value = `${response.data.surname} ${response.data.name}`; // Запись данных Фамилии и Имени для показа в приветствии
-
-        setTimeout(() => {  // Запуск таймера
-          fullName.value = 'Гость'
-        }, time)
+        setTimeout(() => {
+          fullName.value = 'Гость';
+          authToken.value = ''; // Очищаем токен по истечении времени
+        }, time);
       } else {
-        fullName.value = 'Гость'
+        fullName.value = 'Гость';
+        authToken.value = '';
       }
-      // Обработка ошибок
     } catch (error) {
+      authToken.value = '';
+      fullName.value = 'Гость';
       alert('Ошибка сети');
       console.error('Неизвестная ошибка:', error);
     }

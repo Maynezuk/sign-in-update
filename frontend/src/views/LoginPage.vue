@@ -35,18 +35,18 @@ const passwordFieldType = computed(() => {
 // Авторизация
 const loginUser = async () => {
   try {
-    await axios.post('/api/users/login', {
+    const response = await axios.post('/api/users/login', {
       login: user.value.login,
       password: user.value.password
-    }, {
-      withCredentials: true
     });
 
-    authStatus.fetchUserNameData(true) // Отображение изменений в приветствии и запуск таймера на время существования токена
+    // Сохраняем токен в localStorage
+    // localStorage.setItem('token', response.data.access_token);
+    
+    authStatus.fetchUserNameData(true,  response.data.access_token);
 
     await router.push('/');
 
-    // Обработка ошибок
   } catch (error) {
     const axiosError = error as AxiosError;
     if (axiosError.response) {
