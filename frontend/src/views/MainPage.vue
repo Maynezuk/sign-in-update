@@ -1,14 +1,3 @@
-<template>
-  <div>
-    <div class="greeting">
-      <h1>Добро пожаловать на сайт, {{ authStatus.fullName }}!</h1>
-    </div>
-    <div class="btn-container">
-      <my-button @click="logout">Выход</my-button>
-    </div>
-  </div>
-</template>
-
 <script setup lang="ts">
 import MyButton from '@/components/MyButton.vue';
 import axios from 'axios';
@@ -34,6 +23,17 @@ const logout = async () => {
   }
 };
 </script>
+
+<template>
+  <div>
+    <div class="greeting">
+      <h1>Добро пожаловать на сайт, {{ authStatus.fullName }}!</h1>
+    </div>
+    <div class="btn-container">
+      <my-button @click="logout">Выход</my-button>
+    </div>
+  </div>
+</template>
 
 <style scoped>
 .greeting {

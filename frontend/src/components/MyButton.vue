@@ -1,14 +1,14 @@
-<template>
-    <button class="btn" >
-        <slot></slot>
-    </button>
-</template>
-
 <script setup lang="ts">
 defineOptions({
     name: 'my-button'
 })
 </script>
+
+<template>
+    <button class="btn" >
+        <slot></slot>
+    </button>
+</template>
 
 <style scoped>
 .btn {

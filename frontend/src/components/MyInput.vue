@@ -1,7 +1,3 @@
-<template>
-    <input :value="modelValue" @input="updateInput" class="input" type="text">
-</template>
-
 <script setup lang="ts">
 
 defineOptions({
@@ -20,6 +16,10 @@ const updateInput = (event: Event) => {
     emit('update:modelValue', (event.target as HTMLInputElement).value)
 }
 </script>
+
+<template>
+    <input :value="modelValue" @input="updateInput" class="input" type="text">
+</template>
 
 <style scoped>
 .input {

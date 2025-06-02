@@ -1,3 +1,7 @@
+<script setup lang="ts">
+import MyButton from "@/components/MyButton.vue";
+</script>
+
 <template>
     <div class="btn-container">
         <my-button @click="$router.push('/')">Главная</my-button>
@@ -5,10 +9,6 @@
         <my-button @click="$router.push('/login')">Вход</my-button>
     </div>
 </template>
-
-<script setup lang="ts">
-import MyButton from "@/components/MyButton.vue";
-</script>
 
 <style scoped>
 .btn-container {

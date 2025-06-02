@@ -1,3 +1,9 @@
+<script setup lang="ts">
+defineOptions({
+  name: 'my-form',
+})
+</script>
+
 <template>
     <div class="content">
       <form>
@@ -5,12 +11,6 @@
       </form>
   </div>
 </template>
-
-<script setup lang="ts">
-defineOptions({
-  name: 'my-form',
-})
-</script>
 
 <style scoped>
 .content {
