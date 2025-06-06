@@ -18,6 +18,23 @@ const logout = async () => {
     console.error('Ошибка при выходе:', error);
   }
 }; 
+
+const checkToken = async () => {
+  try {
+    const response = await axios.get('/api/users/data', {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      }
+    });
+
+    // authStatus.fullName = `, ${response.data.surname} ${response.data.name}`;
+
+    alert('Токен существует!')
+  } catch (error) {
+    alert('Попытка не удалась: токен истёк!');
+    console.error('Попытка не удалась:', error);
+  }
+}
 </script>
 
 <template>
@@ -27,6 +44,7 @@ const logout = async () => {
     </div>
     <div class="btn-container">
       <my-button @click="logout">Выход</my-button>
+      <my-button @click="checkToken">Проверить токен</my-button>
     </div>
   </div>
 </template>

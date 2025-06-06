@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
 import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import MyButton from '@/components/MyButton.vue';
@@ -10,18 +10,18 @@ import MyInput from '@/components/MyInput.vue';
 interface UserRegister {
     name: string;
     surname: string;
-    middlename: string;
+    patronymic: string;
     login: string;
     password: string;
     repass: string;
 }
 
-const router =useRouter()
+const router = useRouter()
 
 const user = ref<UserRegister>({
     name: '',
     surname: '',
-    middlename: '',
+    patronymic: '',
     login: '',
     password: '',
     repass: ''
@@ -33,19 +33,19 @@ const showPassword = ref(false);
 const showRepass = ref(false);
 
 const togglePasswordVisibility = () => {
-  showPassword.value = !showPassword.value;
+    showPassword.value = !showPassword.value;
 };
 
 const toggleRepassVisibility = () => {
-  showRepass.value = !showRepass.value;
+    showRepass.value = !showRepass.value;
 };
 
 const passwordFieldType = computed(() => {
-  return showPassword.value ? 'text' : 'password';
+    return showPassword.value ? 'text' : 'password';
 });
 
 const repassFieldType = computed(() => {
-  return showRepass.value ? 'text' : 'password';
+    return showRepass.value ? 'text' : 'password';
 });
 
 // Регистрация
@@ -54,27 +54,28 @@ const registerUser = async () => {
         alert('Пароль не совпадает');
         return;
     }
-    
+
     try {
         const response = await axios.post('/api/users/', { // Создание пользователя
             name: user.value.name,
             surname: user.value.surname,
-            middlename: user.value.middlename,
+            patronymic: user.value.patronymic,
             login: user.value.login,
             password: user.value.password
         });
-        
+
         if (response.status === 200) { // Переход на страницу входа, если збс
             await router.push('/login');
         }
 
-    // Обработка ошибок
+        // Обработка ошибок
     } catch (error) {
-        if (axios.isAxiosError(error)) {
-            alert(error.response?.data?.message || 'Ошибка регистрации');
+        const axiosError = error as AxiosError;
+        if (axiosError.response && axiosError.response.status === 404) {
+            alert('Логин уже использован! Попробуйте другой');
         } else {
+            alert('Ошибка сети');
             console.error('Неизвестная ошибка:', error);
-            alert('Неизвестная ошибка при регистрации');
         }
     }
 }
@@ -84,30 +85,22 @@ const registerUser = async () => {
 <template>
     <my-form @submit.prevent="registerUser">
         <h2>Регистрация</h2>
-        <my-input v-model="user.name" type="text" placeholder="Имя" @keydown.space.prevent required/>
-        <my-input v-model="user.surname" type="text" placeholder="Фамилия" @keydown.space.prevent required/>
-        <my-input v-model="user.middlename" type="text" placeholder="Отчество (при наличии)" @keydown.space.prevent/>
+        <my-input v-model="user.name" type="text" placeholder="Имя" @keydown.space.prevent required />
+        <my-input v-model="user.surname" type="text" placeholder="Фамилия" @keydown.space.prevent required />
+        <my-input v-model="user.patronymic" type="text" placeholder="Отчество (при наличии)" @keydown.space.prevent />
         <hr>
-        <my-input v-model="user.login" type="text" placeholder="Логин" @keydown.space.prevent required/>
-        <my-input v-model="user.password" :type="passwordFieldType" placeholder="Пароль" @keydown.space.prevent required/>
+        <my-input v-model="user.login" type="text" placeholder="Логин" @keydown.space.prevent required />
+        <my-input v-model="user.password" :type="passwordFieldType" placeholder="Пароль" @keydown.space.prevent
+            required />
         <div>
-            <input
-                class="pass-show"
-                type="checkbox"
-                :checked="showPassword"
-                @change="togglePasswordVisibility"
-            >
+            <input class="pass-show" type="checkbox" :checked="showPassword" @change="togglePasswordVisibility">
             <span>Показать пароль</span>
         </div>
-        <my-input v-model="user.repass" :type="repassFieldType" placeholder="Подтвердите пароль" @keydown.space.prevent required/>
+        <my-input v-model="user.repass" :type="repassFieldType" placeholder="Подтвердите пароль" @keydown.space.prevent
+            required />
         <div class="end-of-form">
             <div>
-                <input
-                    class="pass-show"
-                    type="checkbox"
-                    :checked="showRepass"
-                    @change="toggleRepassVisibility"
-                >
+                <input class="pass-show" type="checkbox" :checked="showRepass" @change="toggleRepassVisibility">
                 <span>Показать пароль</span>
             </div>
             <router-link to="/login">Есть аккаунт?</router-link>

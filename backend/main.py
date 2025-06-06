@@ -1,5 +1,6 @@
 from fastapi import FastAPI, HTTPException, Depends, Header
 from typing import Optional
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from passlib.context import CryptContext
 from fastapi.middleware.cors import CORSMiddleware
@@ -7,7 +8,7 @@ from models import Base, User
 from database import engine, session_local
 from schemas import UserCreate, User as DbUser
 from jose import jwt
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 
 app = FastAPI()
@@ -68,14 +69,21 @@ async def get_current_user(authorization: str = Header(...)):
 
 @app.post("/api/users/", response_model=DbUser)
 async def create_user(user: UserCreate, db: Session = Depends(get_db)) -> User:
-    db_user = User(
-        name=user.name, surname=user.surname, middlename=user.middlename, login=user.login, password=user.password
-    )
-    db_user.password = pwd_context.hash(user.password)
-    db.add(db_user)
-    db.commit()
-    db.refresh(db_user)
-    return db_user
+    try:
+        db_user = User(
+            name=user.name, surname=user.surname, patronymic=user.patronymic, login=user.login, password=user.password
+        )
+        db_user.password = pwd_context.hash(user.password)
+        db.add(db_user)
+        db.commit()
+        db.refresh(db_user)
+        return db_user
+    except IntegrityError:
+        raise HTTPException(status_code=404, detail='Login already used')
+
+
+
+# sqlalchemy.exc.IntegrityError:
 
 @app.post("/api/users/login")
 async def login_user(user_data: dict, db: Session = Depends(get_db)):
@@ -83,11 +91,8 @@ async def login_user(user_data: dict, db: Session = Depends(get_db)):
     password = user_data.get('password')
 
     db_user = db.query(User).filter(User.login == login).first()
-    if db_user is None:
-        raise HTTPException(status_code=404, detail='User not found')
-
-    if not pwd_context.verify(password, db_user.password):
-        raise HTTPException(status_code=401, detail='Incorrect password')
+    if db_user is None or not pwd_context.verify(password, db_user.password):
+        raise HTTPException(status_code=404, detail='User not found or incorrect password')
 
     access_token = create_access_token(
         data={
@@ -109,4 +114,7 @@ async def login_user(user_data: dict, db: Session = Depends(get_db)):
 
 @app.get("/api/users/data")
 async def read_current_user(current_user: dict = Depends(get_current_user)):
+    # Проверка, что токен еще действителен
+    if datetime.utcnow() > datetime.fromtimestamp(current_user["exp"]):
+        raise HTTPException(status_code=401, detail="Token expired")
     return current_user

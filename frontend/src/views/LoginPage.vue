@@ -42,22 +42,13 @@ const loginUser = async () => {
 
     clearTimeout(authStatus.timerID)
     authStatus.fetchToken(response.data.access_token);
-
+    localStorage.setItem('token', response.data.access_token)
     await router.push('/');
 
   } catch (error) {
     const axiosError = error as AxiosError;
-    if (axiosError.response) {
-      switch (axiosError.response.status) {
-        case 404:
-          alert('Пользователь не найден!');
-          break;
-        case 401:
-          alert('Неверный пароль!');
-          break;
-        default:
-          alert('Ошибка сервера');
-      }
+    if (axiosError.response && axiosError.response.status === 404) {
+      alert('Не найден пользователь или некорректный пароль!');
     } else {
       alert('Ошибка сети');
       console.error('Неизвестная ошибка:', error);

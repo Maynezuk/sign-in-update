@@ -16,7 +16,7 @@ class User(UserBase):
 class UserCreate(UserBase):
     name: str
     surname: str
-    middlename: str
+    patronymic: str
 
 
 # class PostBase(BaseModel):
