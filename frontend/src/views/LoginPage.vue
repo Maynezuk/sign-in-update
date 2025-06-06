@@ -42,7 +42,6 @@ const loginUser = async () => {
 
     clearTimeout(authStatus.timerID)
     authStatus.fetchToken(response.data.access_token);
-    localStorage.setItem('token', response.data.access_token)
     await router.push('/');
 
   } catch (error) {
