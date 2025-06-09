@@ -8,8 +8,7 @@ const authStatus = useAuthStatus()
 // Выход из системы
 const logout = async () => {
   try {
-    clearTimeout(authStatus.timerID);  // Вроде бы и бесполезно, а вроде бы и не плохо
-    authStatus.fullName = '';
+    logout()
   } catch (error) {
     console.error('Ошибка при выходе:', error);
   }

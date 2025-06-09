@@ -7,11 +7,28 @@ import { onMounted } from 'vue';
 
 const authStatus = useAuthStatus()
 onMounted(() => {
-  const token = localStorage.getItem('token')
-  console.log(token)
-  if (token != null) {
-    authStatus.fetchToken(token)
-  }
+    const token = localStorage.getItem('token')
+    console.log(token)
+    if (token != null) {
+      authStatus.fetchToken(token)
+    }
+
+
+
+  // if (authStatus.loginData + 60000 > Date.now()) {
+  //   const token = localStorage.getItem('token')
+  //   console.log(token)
+  //   console.log(authStatus.loginData + '   ' + Date.now())
+  //   if (token != null) {
+  //     authStatus.fetchToken(token)
+  //   }
+  // } else {
+  //   authStatus.logout()
+  //   console.log(authStatus.loginData + '   ' + Date.now())
+  // }
+
+
+
 })
 
 </script>
