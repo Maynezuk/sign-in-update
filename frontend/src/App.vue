@@ -1,6 +1,19 @@
 <script setup lang="ts">
-import {RouterView } from 'vue-router';
+import { RouterView } from 'vue-router';
 import MyHeader from '@/components/MyHeader.vue'
+import { useAuthStatus } from '@/store/authStatus';
+import { onMounted } from 'vue';
+
+
+const authStatus = useAuthStatus()
+onMounted(() => {
+  const token = localStorage.getItem('token')
+  console.log(token)
+  if (token != null) {
+    authStatus.fetchToken(token)
+  }
+})
+
 </script>
 
 <template>
@@ -8,12 +21,10 @@ import MyHeader from '@/components/MyHeader.vue'
     <MyHeader></MyHeader>
     <div class="head">
       <div class="img-container">
-        <img class="pride-img"
-          src="@/assets/logo.png"
-          alt="Логотип pride" />
+        <img class="pride-img" src="@/assets/logo.png" alt="Логотип pride" />
       </div>
     </div>
-    <RouterView/>
+    <RouterView />
   </div>
 </template>
 

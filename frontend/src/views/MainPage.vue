@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import MyButton from '@/components/MyButton.vue';
-import axios from 'axios';
+// import axios from 'axios';
 import { useAuthStatus } from '@/store/authStatus';
 
 const authStatus = useAuthStatus()

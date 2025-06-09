@@ -9,26 +9,33 @@ export const useAuthStatus = defineStore('authStatus', () => {
 
   async function fetchToken(token: string) {
     try {
-        const response = await axios.get('/api/users/data', {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
+      const response = await axios.get('/api/users/data', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
 
 
-        const time = response.data.timer_sec * 1000;
-        fullName.value = `, ${response.data.surname} ${response.data.name}`;
 
-        timerID.value = setTimeout(() => {
-          fullName.value = '';
-        }, time);
+      fullName.value = `, ${response.data.surname} ${response.data.name}`;
+      const time = response.data.timer_sec * 1000;
+      timerID.value = setTimeout(() => {
+        logout()
+      }, time);
+
+
 
     } catch (error) {
-      fullName.value = '';
+      logout();
       alert('Ошибка сети');
       console.error('Неизвестная ошибка:', error);
     }
   };
+
+  function logout() {
+    fullName.value = '';
+    localStorage.removeItem('token')
+  }
 
   return { fetchToken, fullName, timerID }
 })
