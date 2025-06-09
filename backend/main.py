@@ -16,7 +16,8 @@ app = FastAPI()
 # JWT конфигурация (пока бездарный секретный ключ побудет здесь)
 SECRET_KEY = "your-secret-key-here"
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 1 # Таймер существоания токена (для проверки ставлю на 1 минуту)
+ACCESS_TOKEN_EXPIRE_MINUTES = 15 # Таймер существоания токена (для проверки ставлю на 1 минуту)
+REFRESH_TOKEN_EXPIRE_DAYS = 30
 
 origins = [
     "http://localhost:5173",
@@ -43,12 +44,9 @@ def get_db():
     finally:
         db.close()
 
-def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
+def create_token(data: dict, expires_delta: Optional[timedelta] = None):
     to_encode = data.copy()
-    if expires_delta:
-        expire = datetime.utcnow() + expires_delta
-    else:
-        expire = datetime.utcnow() + timedelta(minutes=15)
+    expire = datetime.utcnow() + expires_delta
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
@@ -67,7 +65,7 @@ async def get_current_user(authorization: str = Header(...)):
     except jwt.JWTError:
         raise HTTPException(status_code=401, detail="Invalid token")
 
-@app.post("/api/users/", response_model=DbUser)
+@app.post("/api/registration", response_model=DbUser)
 async def create_user(user: UserCreate, db: Session = Depends(get_db)) -> User:
     try:
         db_user = User(
@@ -83,9 +81,7 @@ async def create_user(user: UserCreate, db: Session = Depends(get_db)) -> User:
 
 
 
-# sqlalchemy.exc.IntegrityError:
-
-@app.post("/api/users/login")
+@app.post("/api/login")
 async def login_user(user_data: dict, db: Session = Depends(get_db)):
     login = user_data.get('login')
     password = user_data.get('password')
@@ -94,7 +90,7 @@ async def login_user(user_data: dict, db: Session = Depends(get_db)):
     if db_user is None or not pwd_context.verify(password, db_user.password):
         raise HTTPException(status_code=404, detail='User not found or incorrect password')
 
-    access_token = create_access_token(
+    access_token = create_token(
         data={
             "sub": db_user.login,
             "name": db_user.name,
@@ -105,14 +101,25 @@ async def login_user(user_data: dict, db: Session = Depends(get_db)):
         expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     )
 
+    refresh_token = create_token(
+        data={
+            "sub": db_user.login,
+            "name": db_user.name,
+            "surname": db_user.surname,
+            "id": db_user.id,
+        },
+        expires_delta=timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
+    )
+
     return {
         "message": "Login successful",
         "access_token": access_token,
+        "refresh_token": refresh_token,
         "token_type": "bearer"
     }
 
 
-@app.get("/api/users/data")
+@app.get("/api/data")
 async def read_current_user(current_user: dict = Depends(get_current_user)):
     # Проверка, что токен еще действителен
     if datetime.utcnow() > datetime.fromtimestamp(current_user["exp"]):

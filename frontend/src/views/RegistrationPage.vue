@@ -56,7 +56,7 @@ const registerUser = async () => {
     }
 
     try {
-        const response = await axios.post('/api/users/', { // Создание пользователя
+        const response = await axios.post('/api/registration', { // Создание пользователя
             name: user.value.name,
             surname: user.value.surname,
             patronymic: user.value.patronymic,

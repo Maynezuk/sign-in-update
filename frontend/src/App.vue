@@ -1,34 +1,21 @@
 <script setup lang="ts">
-import { RouterView } from 'vue-router';
+import { RouterView, useRouter } from 'vue-router';
 import MyHeader from '@/components/MyHeader.vue'
 import { useAuthStatus } from '@/store/authStatus';
 import { onMounted } from 'vue';
 
+const router = useRouter();
 
-const authStatus = useAuthStatus()
+const authStatus = useAuthStatus();
+
 onMounted(() => {
     const token = localStorage.getItem('token')
     console.log(token)
     if (token != null) {
       authStatus.fetchToken(token)
+    } else {
+      router.push('/login')
     }
-
-
-
-  // if (authStatus.loginData + 60000 > Date.now()) {
-  //   const token = localStorage.getItem('token')
-  //   console.log(token)
-  //   console.log(authStatus.loginData + '   ' + Date.now())
-  //   if (token != null) {
-  //     authStatus.fetchToken(token)
-  //   }
-  // } else {
-  //   authStatus.logout()
-  //   console.log(authStatus.loginData + '   ' + Date.now())
-  // }
-
-
-
 })
 
 </script>

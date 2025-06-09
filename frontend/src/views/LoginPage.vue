@@ -35,17 +35,17 @@ const passwordFieldType = computed(() => {
 // Авторизация
 const loginUser = async () => {
   try {
-    const response = await axios.post('/api/users/login', {
+    const response = await axios.post('/api/login', {
       login: user.value.login,
       password: user.value.password
     });
 
-    clearTimeout(authStatus.timerID)
-    const loginDateNow = Date.now()
-    localStorage.setItem('loginDate', String(loginDateNow))
+    // clearTimeout(authStatus.timerID)
+    // const loginDateNow = Date.now()
+    // localStorage.setItem('loginDate', String(loginDateNow))
 
     authStatus.fetchToken(response.data.access_token);
-    localStorage.setItem('token', response.data.access_token)
+    localStorage.setItem('token', response.data.refresh_token)
     await router.push('/');
 
   } catch (error) {

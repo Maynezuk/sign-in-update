@@ -6,9 +6,9 @@ import { useAuthStatus } from '@/store/authStatus';
 const authStatus = useAuthStatus()
 
 // Выход из системы
-const logout = async () => {
+const userLogout = async () => {
   try {
-    logout()
+    authStatus.logout()
   } catch (error) {
     console.error('Ошибка при выходе:', error);
   }
@@ -21,7 +21,7 @@ const logout = async () => {
       <h1>Добро пожаловать на сайт{{ authStatus.fullName }}!</h1>
     </div>
     <div class="btn-container">
-      <my-button @click="logout">Выход</my-button>
+      <my-button @click="userLogout">Выход</my-button>
     </div>
   </div>
 </template>
