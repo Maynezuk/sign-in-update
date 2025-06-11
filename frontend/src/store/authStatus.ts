@@ -21,18 +21,13 @@ export const useAuthStatus = defineStore('authStatus', () => {
       return true
     } catch (error) {
       // Обновление токена, если access токен истек
-      if (isTokenExpiredError(error)) {
+      if ((error as AxiosError)?.response?.status === 401) {
         return tryRefreshToken(localStorage.getItem('token'))
       }
       logout()
       return false
     }
   };
-
-  // Проверка, является ли ошибка ошибкой истечения токена
-  function isTokenExpiredError(error: unknown): boolean {
-    return (error as AxiosError)?.response?.status === 401
-  }
 
   // Попытка обновить токен с помощью refresh токена
   async function tryRefreshToken(refreshToken: string | null): Promise<boolean> {
