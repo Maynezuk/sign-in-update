@@ -1,14 +1,14 @@
 import { defineStore } from 'pinia'
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
 import { ref } from 'vue';
+import { useRouter } from 'vue-router';
 
 export const useAuthStatus = defineStore('authStatus', () => {
   const fullName = ref('')
 
-  // const timerID = ref(0)
+  const router = useRouter()
 
-  // const loginDate = ref(0)
-
+  // Получение данных пользователя по access токену
   async function fetchToken(token: string) {
     try {
       const response = await axios.get('/api/data', {
@@ -17,36 +17,53 @@ export const useAuthStatus = defineStore('authStatus', () => {
         }
       });
 
-
-
       fullName.value = `, ${response.data.surname} ${response.data.name}`;
-      // const time = response.data.timer_sec * 1000;
-      // loginDate.value = Number(localStorage.getItem('loginDate'))
-
-
-      // timerID.value = setInterval(() => {
-      //   console.log(loginDate.value + '   ' + Date.now())
-      //   if (loginDate.value + time <= Date.now()) {
-      //     logout()
-      //   }
-      // }, 500);
-
-
-
+      return true
     } catch (error) {
-      logout();
-      alert('Ошибка сети');
-      console.error('Неизвестная ошибка:', error);
+      // Обновление токена, если access токен истек
+      if (isTokenExpiredError(error)) {
+        return tryRefreshToken(localStorage.getItem('token'))
+      }
+      logout()
+      return false
     }
   };
 
-  function logout() {
-    fullName.value = '';
-    localStorage.removeItem('token')
-    // localStorage.removeItem('loginDate')
-    // loginDate.value = 0
-    // clearInterval(timerID.value)
+  // Проверка, является ли ошибка ошибкой истечения токена
+  function isTokenExpiredError(error: unknown): boolean {
+    return (error as AxiosError)?.response?.status === 401
   }
 
-  return { fetchToken, logout, fullName }
+  // Попытка обновить токен с помощью refresh токена
+  async function tryRefreshToken(refreshToken: string | null): Promise<boolean> {
+    if (refreshToken === null) {
+      logout()
+      return false
+    } else {
+      try {
+        const response = await axios.post('/api/refresh', {
+          refresh_token: refreshToken
+        });
+        return await fetchToken(response.data.access_token)
+      } catch (error) {
+        console.log(error)
+        logout()
+        return false
+      }
+    }
+  }
+
+  // Выход из системы
+  function logout() {
+    fullName.value = ''
+    localStorage.removeItem('token')
+    router.push('/login')
+  }
+
+  return {
+    fetchToken,
+    tryRefreshToken,
+    logout,
+    fullName,
+  }
 })

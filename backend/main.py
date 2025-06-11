@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Depends, Header
+from fastapi import FastAPI, HTTPException, Depends, Header, status
 from typing import Optional
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -6,8 +6,8 @@ from passlib.context import CryptContext
 from fastapi.middleware.cors import CORSMiddleware
 from models import Base, User
 from database import engine, session_local
-from schemas import UserCreate, User as DbUser
-from jose import jwt
+from schemas import UserCreate, User as DbUser, RefreshTokenRequest
+from jose import jwt, JWTError
 from datetime import datetime, timedelta, timezone
 
 
@@ -16,8 +16,11 @@ app = FastAPI()
 # JWT конфигурация (пока бездарный секретный ключ побудет здесь)
 SECRET_KEY = "your-secret-key-here"
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 15 # Таймер существоания токена (для проверки ставлю на 1 минуту)
+ACCESS_TOKEN_EXPIRE_MINUTES = 1 # Таймер существоания токена (для проверки ставлю на 1 минуту)
 REFRESH_TOKEN_EXPIRE_DAYS = 30
+
+TOKEN_TYPE_ACCESS = "access"
+TOKEN_TYPE_REFRESH = "refresh"
 
 origins = [
     "http://localhost:5173",
@@ -44,32 +47,143 @@ def get_db():
     finally:
         db.close()
 
-def create_token(data: dict, expires_delta: Optional[timedelta] = None):
+
+def create_token(data: dict, expires_delta: Optional[timedelta] = None, token_type: str = TOKEN_TYPE_ACCESS):
     to_encode = data.copy()
-    expire = datetime.utcnow() + expires_delta
-    to_encode.update({"exp": expire})
+    expire = datetime.now(timezone.utc) + expires_delta
+    to_encode.update({
+        "exp": expire,
+        "type": token_type  # Добавляем тип токена в payload
+    })
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
-async def get_current_user(authorization: str = Header(...)):
+
+async def get_current_user(authorization: str = Header(...), db: Session = Depends(get_db)):
     if not authorization.startswith("Bearer "):
-        raise HTTPException(status_code=401, detail="Not authenticated")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
 
     token = authorization[7:]  # Убираем 'Bearer '
 
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+
+        # Проверяем тип токена
+        if payload.get("type") != TOKEN_TYPE_ACCESS:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid token type",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+
+        # Проверяем, что пользователь существует в БД
+        login: str = payload.get("sub")
+        if login is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid token",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+
+        user = db.query(User).filter(User.login == login).first()
+        if user is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="User not found",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+
         return payload
     except jwt.ExpiredSignatureError:
-        raise HTTPException(status_code=401, detail="Token expired")
-    except jwt.JWTError:
-        raise HTTPException(status_code=401, detail="Invalid token")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token expired",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    except JWTError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+
+async def validate_refresh_token(refresh_token: str, db: Session):
+    try:
+        payload = jwt.decode(refresh_token, SECRET_KEY, algorithms=[ALGORITHM])
+
+        # Проверяем тип токена
+        if payload.get("type") != TOKEN_TYPE_REFRESH:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid token type",
+            )
+
+        # Проверяем, что пользователь существует
+        login: str = payload.get("sub")
+        if login is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid token",
+            )
+
+        user = db.query(User).filter(User.login == login).first()
+        if user is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="User not found",
+            )
+
+        return user
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Refresh token expired",
+        )
+    except JWTError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid refresh token",
+        )
+
+
+
+
+
+@app.post("/api/refresh")
+async def refresh_token(request: RefreshTokenRequest, db: Session = Depends(get_db)):
+    user = await validate_refresh_token(request.refresh_token, db)
+
+    # Создаем новый access токен
+    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_token(
+        data={
+            "sub": user.login,
+            "name": user.name,
+            "surname": user.surname,
+            "id": user.id,
+            "timer_sec": ACCESS_TOKEN_EXPIRE_MINUTES * 60
+        },
+        expires_delta=access_token_expires,
+        token_type=TOKEN_TYPE_ACCESS
+    )
+
+    return {
+        "access_token": access_token,
+        "token_type": "bearer"
+    }
+
 
 @app.post("/api/registration", response_model=DbUser)
 async def create_user(user: UserCreate, db: Session = Depends(get_db)) -> User:
     try:
         db_user = User(
-            name=user.name, surname=user.surname, patronymic=user.patronymic, login=user.login, password=user.password
+            name=user.name, surname=user.surname, patronymic=user.patronymic,
+            login=user.login, password=user.password
         )
         db_user.password = pwd_context.hash(user.password)
         db.add(db_user)
@@ -77,8 +191,7 @@ async def create_user(user: UserCreate, db: Session = Depends(get_db)) -> User:
         db.refresh(db_user)
         return db_user
     except IntegrityError:
-        raise HTTPException(status_code=404, detail='Login already used')
-
+        raise HTTPException(status_code=400, detail='Login already used')
 
 
 @app.post("/api/login")
@@ -88,8 +201,9 @@ async def login_user(user_data: dict, db: Session = Depends(get_db)):
 
     db_user = db.query(User).filter(User.login == login).first()
     if db_user is None or not pwd_context.verify(password, db_user.password):
-        raise HTTPException(status_code=404, detail='User not found or incorrect password')
+        raise HTTPException(status_code=401, detail='User not found or incorrect password')
 
+    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_token(
         data={
             "sub": db_user.login,
@@ -98,17 +212,15 @@ async def login_user(user_data: dict, db: Session = Depends(get_db)):
             "id": db_user.id,
             "timer_sec": ACCESS_TOKEN_EXPIRE_MINUTES * 60
         },
-        expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+        expires_delta=access_token_expires,
+        token_type=TOKEN_TYPE_ACCESS
     )
 
+    refresh_token_expires = timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
     refresh_token = create_token(
-        data={
-            "sub": db_user.login,
-            "name": db_user.name,
-            "surname": db_user.surname,
-            "id": db_user.id,
-        },
-        expires_delta=timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
+        data={"sub": db_user.login},
+        expires_delta=refresh_token_expires,
+        token_type=TOKEN_TYPE_REFRESH
     )
 
     return {
@@ -121,7 +233,4 @@ async def login_user(user_data: dict, db: Session = Depends(get_db)):
 
 @app.get("/api/data")
 async def read_current_user(current_user: dict = Depends(get_current_user)):
-    # Проверка, что токен еще действителен
-    if datetime.utcnow() > datetime.fromtimestamp(current_user["exp"]):
-        raise HTTPException(status_code=401, detail="Token expired")
     return current_user

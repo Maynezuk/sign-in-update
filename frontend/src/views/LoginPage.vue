@@ -40,12 +40,9 @@ const loginUser = async () => {
       password: user.value.password
     });
 
-    // clearTimeout(authStatus.timerID)
-    // const loginDateNow = Date.now()
-    // localStorage.setItem('loginDate', String(loginDateNow))
-
     authStatus.fetchToken(response.data.access_token);
     localStorage.setItem('token', response.data.refresh_token)
+
     await router.push('/');
 
   } catch (error) {

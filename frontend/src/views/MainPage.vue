@@ -5,6 +5,8 @@ import { useAuthStatus } from '@/store/authStatus';
 
 const authStatus = useAuthStatus()
 
+const token =localStorage.getItem('token')
+
 // Выход из системы
 const userLogout = async () => {
   try {
@@ -21,7 +23,7 @@ const userLogout = async () => {
       <h1>Добро пожаловать на сайт{{ authStatus.fullName }}!</h1>
     </div>
     <div class="btn-container">
-      <my-button @click="userLogout">Выход</my-button>
+      <my-button v-if="token != null" @click="userLogout">Выход</my-button>
     </div>
   </div>
 </template>
