@@ -10,7 +10,7 @@ const token =localStorage.getItem('token')
 // Выход из системы
 const userLogout = async () => {
   try {
-    authStatus.logout()
+    await authStatus.logout()
   } catch (error) {
     console.error('Ошибка при выходе:', error);
   }

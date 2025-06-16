@@ -24,37 +24,55 @@ export const useAuthStatus = defineStore('authStatus', () => {
       if ((error as AxiosError)?.response?.status === 401) {
         return tryRefreshToken(localStorage.getItem('token'))
       }
-      logout()
+      await logout()
       return false
     }
   };
 
   // Попытка обновить токен с помощью refresh токена
-  async function tryRefreshToken(refreshToken: string | null): Promise<boolean> {
-    if (refreshToken === null) {
-      logout()
-      return false
-    } else {
-      try {
-        const response = await axios.post('/api/refresh', {
-          refresh_token: refreshToken
-        });
-        return await fetchToken(response.data.access_token)
-      } catch (error) {
-        console.log(error)
-        logout()
-        return false
-      }
-    }
+async function tryRefreshToken(refreshToken: string | null): Promise<boolean> {
+  if (!refreshToken) {
+    await logout();
+    return false;
   }
+
+  try {
+    const response = await axios.post('/api/refresh', {
+      refresh_token: refreshToken
+    });
+    
+    const success = await fetchToken(response.data.access_token);
+    if (!success) {
+      await logout();
+    }
+    return success;
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response?.status === 401) {
+      await logout();
+    } else {
+      console.error('Refresh error:', error);
+    }
+    return false;
+  }
+}
 
   // Выход из системы
-  function logout() {
-    fullName.value = ''
-    localStorage.removeItem('token')
-    router.push('/login')
+async function logout() {
+  const refreshToken = localStorage.getItem('token')
+  if (refreshToken !== null) {
+    try {
+      await axios.post('/api/logout', {
+        refresh_token: refreshToken
+      });
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      fullName.value = '';
+      localStorage.removeItem('token');
+      await router.push('/login');
+    }
   }
-
+}
   return {
     fetchToken,
     tryRefreshToken,

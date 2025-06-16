@@ -1,4 +1,5 @@
 from pydantic import BaseModel
+from datetime import datetime
 
 
 class UserBase(BaseModel):
@@ -6,7 +7,7 @@ class UserBase(BaseModel):
     password: str
 
 
-class User(UserBase):
+class DbUser(UserBase):
     id: int
 
     class Config:
@@ -19,5 +20,5 @@ class UserCreate(UserBase):
     patronymic: str
 
 
-class RefreshTokenRequest(BaseModel):
+class RefreshTokenBase(BaseModel):
     refresh_token: str

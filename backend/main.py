@@ -4,9 +4,9 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from passlib.context import CryptContext
 from fastapi.middleware.cors import CORSMiddleware
-from models import Base, User
+from models import Base, User, RefreshToken
 from database import engine, session_local
-from schemas import UserCreate, User as DbUser, RefreshTokenRequest
+from schemas import UserCreate, DbUser, RefreshTokenBase
 from jose import jwt, JWTError
 from datetime import datetime, timedelta, timezone
 
@@ -112,18 +112,29 @@ async def get_current_user(authorization: str = Header(...), db: Session = Depen
         )
 
 
+def create_refresh_token_record(db: Session, user: User, token: str, expires_delta: timedelta):
+    expires_at = datetime.now(timezone.utc) + expires_delta
+    db_token = RefreshToken(
+        token=token,
+        user_id=user.id,
+        expires_at=expires_at
+    )
+    db.add(db_token)
+    db.commit()
+    db.refresh(db_token)
+    return db_token
+
+
 async def validate_refresh_token(refresh_token: str, db: Session):
     try:
         payload = jwt.decode(refresh_token, SECRET_KEY, algorithms=[ALGORITHM])
 
-        # Проверяем тип токена
         if payload.get("type") != TOKEN_TYPE_REFRESH:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid token type",
             )
 
-        # Проверяем, что пользователь существует
         login: str = payload.get("sub")
         if login is None:
             raise HTTPException(
@@ -136,6 +147,19 @@ async def validate_refresh_token(refresh_token: str, db: Session):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="User not found",
+            )
+
+        # Проверяем, есть ли токен в белом списке
+        token_record = db.query(RefreshToken).filter(
+            RefreshToken.token == refresh_token,
+            RefreshToken.user_id == user.id,
+            RefreshToken.expires_at > datetime.now(timezone.utc)
+        ).first()
+
+        if not token_record:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Refresh token not found or expired",
             )
 
         return user
@@ -151,11 +175,8 @@ async def validate_refresh_token(refresh_token: str, db: Session):
         )
 
 
-
-
-
 @app.post("/api/refresh")
-async def refresh_token(request: RefreshTokenRequest, db: Session = Depends(get_db)):
+async def refresh_token(request: RefreshTokenBase, db: Session = Depends(get_db)):
     user = await validate_refresh_token(request.refresh_token, db)
 
     # Создаем новый access токен
@@ -194,43 +215,94 @@ async def create_user(user: UserCreate, db: Session = Depends(get_db)) -> User:
         raise HTTPException(status_code=400, detail='Login already used')
 
 
+def cleanup_expired_tokens(db: Session):
+    db.query(RefreshToken).filter(
+        RefreshToken.expires_at < datetime.now(timezone.utc)
+    ).delete()
+    db.commit()
+
+
 @app.post("/api/login")
 async def login_user(user_data: dict, db: Session = Depends(get_db)):
-    login = user_data.get('login')
-    password = user_data.get('password')
+    try:
+        login = user_data.get('login')
+        password = user_data.get('password')
 
-    db_user = db.query(User).filter(User.login == login).first()
-    if db_user is None or not pwd_context.verify(password, db_user.password):
-        raise HTTPException(status_code=401, detail='User not found or incorrect password')
+        db_user = db.query(User).filter(User.login == login).first()
+        if db_user is None or not pwd_context.verify(password, db_user.password):
+            raise HTTPException(status_code=401, detail='User not found or incorrect password')
 
-    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = create_token(
-        data={
-            "sub": db_user.login,
-            "name": db_user.name,
-            "surname": db_user.surname,
-            "id": db_user.id,
-            "timer_sec": ACCESS_TOKEN_EXPIRE_MINUTES * 60
-        },
-        expires_delta=access_token_expires,
-        token_type=TOKEN_TYPE_ACCESS
-    )
+        # Удаление всех предыдущих токенов в транзакции
+        try:
+            db.query(RefreshToken).filter(RefreshToken.user_id == db_user.id).delete()
+            db.commit()
+        except Exception as e:
+            db.rollback()
+            raise HTTPException(status_code=500, detail='Failed to clean old tokens')
 
-    refresh_token_expires = timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
-    refresh_token = create_token(
-        data={"sub": db_user.login},
-        expires_delta=refresh_token_expires,
-        token_type=TOKEN_TYPE_REFRESH
-    )
+        access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+        access_token = create_token(
+            data={
+                "sub": db_user.login,
+                "name": db_user.name,
+                "surname": db_user.surname,
+                "id": db_user.id,
+                "timer_sec": ACCESS_TOKEN_EXPIRE_MINUTES * 60
+            },
+            expires_delta=access_token_expires,
+            token_type=TOKEN_TYPE_ACCESS
+        )
 
-    return {
-        "message": "Login successful",
-        "access_token": access_token,
-        "refresh_token": refresh_token,
-        "token_type": "bearer"
-    }
+        refresh_token_expires = timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
+        refresh_token = create_token(
+            data={"sub": db_user.login},
+            expires_delta=refresh_token_expires,
+            token_type=TOKEN_TYPE_REFRESH
+        )
+
+        create_refresh_token_record(db, db_user, refresh_token, refresh_token_expires)
+
+        return {
+            "message": "Login successful",
+            "access_token": access_token,
+            "refresh_token": refresh_token,
+            "token_type": "bearer"
+        }
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @app.get("/api/data")
 async def read_current_user(current_user: dict = Depends(get_current_user)):
     return current_user
+
+
+@app.post("/api/logout")
+async def logout(request: RefreshTokenBase, db: Session = Depends(get_db)):
+    try:
+        # Проверяем валидность токена перед удалением
+        payload = jwt.decode(request.refresh_token, SECRET_KEY, algorithms=[ALGORITHM])
+        login = payload.get("sub")
+
+        if not login:
+            raise HTTPException(status_code=400, detail="Invalid token")
+
+        # Удаляем конкретный токен
+        result = db.query(RefreshToken).filter(
+            RefreshToken.token == request.refresh_token
+        ).delete()
+
+        if not result:
+            raise HTTPException(status_code=404, detail="Token not found")
+
+        db.commit()
+        return {"message": "Logged out successfully"}
+    except jwt.ExpiredSignatureError:
+        # Даже если токен истек, попытаемся его удалить
+        db.query(RefreshToken).filter(
+            RefreshToken.token == request.refresh_token
+        ).delete()
+        db.commit()
+        return {"message": "Logged out successfully (token was expired)"}
+    except JWTError:
+        raise HTTPException(status_code=400, detail="Invalid token")

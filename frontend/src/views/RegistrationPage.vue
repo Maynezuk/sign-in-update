@@ -71,7 +71,7 @@ const registerUser = async () => {
         // Обработка ошибок
     } catch (error) {
         const axiosError = error as AxiosError;
-        if (axiosError.response && axiosError.response.status === 404) {
+        if (axiosError.response && axiosError.response.status === 400) {
             alert('Логин уже использован! Попробуйте другой');
         } else {
             alert('Ошибка сети');
