@@ -31,7 +31,6 @@ origins = [
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
-    # allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -53,7 +52,7 @@ def create_token(data: dict, expires_delta: Optional[timedelta] = None, token_ty
     expire = datetime.now(timezone.utc) + expires_delta
     to_encode.update({
         "exp": expire,
-        "type": token_type  # Добавляем тип токена в payload
+        "type": token_type
     })
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
@@ -67,12 +66,11 @@ async def get_current_user(authorization: str = Header(...), db: Session = Depen
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    token = authorization[7:]  # Убираем 'Bearer '
+    token = authorization[7:]
 
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
 
-        # Проверяем тип токена
         if payload.get("type") != TOKEN_TYPE_ACCESS:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
@@ -80,7 +78,6 @@ async def get_current_user(authorization: str = Header(...), db: Session = Depen
                 headers={"WWW-Authenticate": "Bearer"},
             )
 
-        # Проверяем, что пользователь существует в БД
         login: str = payload.get("sub")
         if login is None:
             raise HTTPException(
@@ -149,7 +146,6 @@ async def validate_refresh_token(refresh_token: str, db: Session):
                 detail="User not found",
             )
 
-        # Проверяем, есть ли токен в белом списке
         token_record = db.query(RefreshToken).filter(
             RefreshToken.token == refresh_token,
             RefreshToken.user_id == user.id,
@@ -179,7 +175,6 @@ async def validate_refresh_token(refresh_token: str, db: Session):
 async def refresh_token(request: RefreshTokenBase, db: Session = Depends(get_db)):
     user = await validate_refresh_token(request.refresh_token, db)
 
-    # Создаем новый access токен
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_token(
         data={
@@ -232,7 +227,6 @@ async def login_user(user_data: dict, db: Session = Depends(get_db)):
         if db_user is None or not pwd_context.verify(password, db_user.password):
             raise HTTPException(status_code=401, detail='User not found or incorrect password')
 
-        # Удаление всех предыдущих токенов в транзакции
         try:
             db.query(RefreshToken).filter(RefreshToken.user_id == db_user.id).delete()
             db.commit()
@@ -280,14 +274,12 @@ async def read_current_user(current_user: dict = Depends(get_current_user)):
 @app.post("/api/logout")
 async def logout(request: RefreshTokenBase, db: Session = Depends(get_db)):
     try:
-        # Проверяем валидность токена перед удалением
         payload = jwt.decode(request.refresh_token, SECRET_KEY, algorithms=[ALGORITHM])
         login = payload.get("sub")
 
         if not login:
             raise HTTPException(status_code=400, detail="Invalid token")
 
-        # Удаляем конкретный токен
         result = db.query(RefreshToken).filter(
             RefreshToken.token == request.refresh_token
         ).delete()
@@ -298,7 +290,6 @@ async def logout(request: RefreshTokenBase, db: Session = Depends(get_db)):
         db.commit()
         return {"message": "Logged out successfully"}
     except jwt.ExpiredSignatureError:
-        # Даже если токен истек, попытаемся его удалить
         db.query(RefreshToken).filter(
             RefreshToken.token == request.refresh_token
         ).delete()
